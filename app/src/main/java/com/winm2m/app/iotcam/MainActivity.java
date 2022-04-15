@@ -16,11 +16,13 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Size;
@@ -30,6 +32,13 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -46,6 +55,11 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnCapture;
     private TextureView textureView;
+    private Config config;
+    private MqttHandler mqttHandler;
+    private boolean tryConnecting;
+    private String serial = "";
+
 
     //Check state orientation of output image
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -66,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     //Save to FILE
     private File file;
     private static final int REQUEST_CAMERA_PERMISSION = 200;
+
     private boolean mFlashSupported;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
@@ -104,6 +119,26 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 takePicture();
+            }
+        });
+
+        config = Config.load();
+        prepareMQTT();
+    }
+
+    private void prepareMQTT() {
+        mqttHandler = new MqttHandler(this, "tcp://" + config.getMqttHost() + ":" + config.getMqttPort());
+        tryConnecting = true;
+        mqttHandler.connect(new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken asyncActionToken) {
+                tryConnecting = false;
+                mqttHandler.publish("argos-synapse", "{\"id\": \"" + config.getSerial() + "\"}");
+                setSerial(config.getSerial());
+            }
+
+            @Override
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
             }
         });
     }
@@ -283,7 +318,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-
         }
 
         @Override
@@ -293,7 +327,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
         }
     };
 
@@ -317,6 +350,23 @@ public class MainActivity extends AppCompatActivity {
             openCamera();
         else
             textureView.setSurfaceTextureListener(textureListener);
+    }
+
+    private void setSerial(String s) {
+        if(serial != "") {
+            mqttHandler.unsubscribe(getTopicString());
+        }
+        this.serial = s;
+        mqttHandler.subscribe(getTopicString(), new IMqttMessageListener() {
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                takePicture();
+            }
+        });
+    }
+
+    private String getTopicString() {
+        return serial;
     }
 
     @Override
