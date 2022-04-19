@@ -30,7 +30,9 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -390,5 +392,39 @@ public class MainActivity extends AppCompatActivity {
         mBackgroundThread = new HandlerThread("Camera Background");
         mBackgroundThread.start();
         mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+    }
+
+    private void blurFocusAll() {
+        View view = getCurrentFocus();
+        if (view == null) return;
+        InputMethodManager.class.cast(this.getSystemService(Context.INPUT_METHOD_SERVICE))
+                .hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    public void onClickSaveAndCloseConfig(View v) {
+        blurFocusAll();
+        config.setSerial(EditText.class.cast(findViewById(R.id.editSerial)).getText().toString());
+        config.setMqttHost(EditText.class.cast(findViewById(R.id.editMqttHost)).getText().toString());
+        config.setMqttPort(EditText.class.cast(findViewById(R.id.editMqttPort)).getText().toString());
+        config.setMqttUser(EditText.class.cast(findViewById(R.id.editMqttUser)).getText().toString());
+        config.setMqttPass(EditText.class.cast(findViewById(R.id.editMqttPass)).getText().toString());
+        config.setUploadUrl(EditText.class.cast(findViewById(R.id.editUploadURL)).getText().toString());
+        config.setFormat(EditText.class.cast(findViewById(R.id.editFormat)).getText().toString());
+        config.save();
+        findViewById(R.id.textureView).setVisibility(View.VISIBLE);
+        findViewById(R.id.configPopup).setVisibility(View.GONE);
+    }
+
+    public void onClickShowConfig(View v) {
+        EditText.class.cast(findViewById(R.id.editSerial)).setText(config.getSerial());
+        EditText.class.cast(findViewById(R.id.editMqttHost)).setText(config.getMqttHost());
+        EditText.class.cast(findViewById(R.id.editMqttPort)).setText(config.getMqttPort());
+        EditText.class.cast(findViewById(R.id.editMqttUser)).setText(config.getMqttUser());
+        EditText.class.cast(findViewById(R.id.editMqttPass)).setText(config.getMqttPass());
+        EditText.class.cast(findViewById(R.id.editUploadURL)).setText(config.getUploadUrl());
+        EditText.class.cast(findViewById(R.id.editFormat)).setText(config.getFormat());
+
+        findViewById(R.id.textureView).setVisibility(View.GONE);
+        findViewById(R.id.configPopup).setVisibility(View.VISIBLE);
     }
 }

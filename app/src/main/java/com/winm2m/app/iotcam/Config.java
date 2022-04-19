@@ -11,8 +11,6 @@ public class Config {
 
     final static String DEFAULT_MQTT_HOST = "hub.winm2m.com";
     final static String DEFAULT_MQTT_PORT = "46083";
-    final static String DEFAULT_MQTT_USER = "synapse";
-    final static String DEFAULT_MQTT_PASS = "__synapse__";
     final static String DEFAULT_SERIAL = "2ic00000";
 
 
@@ -75,11 +73,9 @@ public class Config {
     private Config setDefault() {
         setMqttHost(DEFAULT_MQTT_HOST);
         setMqttPort(DEFAULT_MQTT_PORT);
-        setMqttUser(DEFAULT_MQTT_USER);
-        setMqttPass(DEFAULT_MQTT_PASS);
         setSerial(DEFAULT_SERIAL);
-        setUploadUrl("");
-        setFormat("");
+        setUploadUrl("http://172.20.110.18:14000/api/upload");
+        setFormat("{sessionId}-a.jpg");
         return this;
     }
 
