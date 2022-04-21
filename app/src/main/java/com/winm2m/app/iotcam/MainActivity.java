@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private MqttHandler mqttHandler;
     private boolean tryConnecting;
     private String serial = "";
+    private Uploader uploader = null;
 
 
     //Check state orientation of output image
@@ -125,10 +126,19 @@ public class MainActivity extends AppCompatActivity {
         });
 
         config = Config.load();
+        refreshConnections();
+    }
+
+    private void refreshConnections() {
         prepareMQTT();
+        uploader = new Uploader(config.getUploadUrl());
     }
 
     private void prepareMQTT() {
+        if (mqttHandler != null && !"".equals(serial)) {
+            mqttHandler.unsubscribe(getTopicString());
+            serial = "";
+        }
         mqttHandler = new MqttHandler(this, "tcp://" + config.getMqttHost() + ":" + config.getMqttPort());
         tryConnecting = true;
         mqttHandler.connect(new IMqttActionListener() {
@@ -140,8 +150,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-            }
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {}
         });
     }
 
@@ -188,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
                         byte[] bytes = new byte[buffer.capacity()];
                         buffer.get(bytes);
                         save(bytes);
-
+                        uploader.upload(bytes, "/" + config.getSerial() + "/tmp.jpg");
                     }
                     catch (FileNotFoundException e)
                     {
@@ -355,9 +364,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setSerial(String s) {
-        if(serial != "") {
+        if(!"".equals(serial))
             mqttHandler.unsubscribe(getTopicString());
-        }
         this.serial = s;
         mqttHandler.subscribe(getTopicString(), new IMqttMessageListener() {
             @Override
@@ -413,6 +421,7 @@ public class MainActivity extends AppCompatActivity {
         config.save();
         findViewById(R.id.textureView).setVisibility(View.VISIBLE);
         findViewById(R.id.configPopup).setVisibility(View.GONE);
+        refreshConnections();
     }
 
     public void onClickShowConfig(View v) {
