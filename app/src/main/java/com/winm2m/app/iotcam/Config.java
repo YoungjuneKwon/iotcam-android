@@ -91,7 +91,6 @@ public class Config {
         return this;
     }
 
-    /* TODO : develop */
     public static Config load() {
         Config c = new Config().setDefault();
         if (!new File(CONFIG_PATH).exists()) c.save();

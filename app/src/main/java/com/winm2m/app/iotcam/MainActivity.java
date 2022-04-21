@@ -48,8 +48,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean tryConnecting;
     private String serial = "";
     private Uploader uploader = null;
+    private String sessionId = "";
 
 
     //Check state orientation of output image
@@ -80,8 +83,6 @@ public class MainActivity extends AppCompatActivity {
     private Size imageDimension;
     private ImageReader imageReader;
 
-    //Save to FILE
-    private File file;
     private static final int REQUEST_CAMERA_PERMISSION = 200;
 
     private boolean mFlashSupported;
@@ -106,7 +107,6 @@ public class MainActivity extends AppCompatActivity {
             cameraDevice=null;
         }
     };
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,8 +155,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void takePicture() {
-        if(cameraDevice == null)
-            return;
+        if(cameraDevice == null) return;
         CameraManager manager = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
         try{
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
@@ -186,7 +185,6 @@ public class MainActivity extends AppCompatActivity {
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,ORIENTATIONS.get(rotation));
 
-            file = new File(Environment.getExternalStorageDirectory()+"/"+UUID.randomUUID().toString()+".jpg");
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader imageReader) {
@@ -196,32 +194,13 @@ public class MainActivity extends AppCompatActivity {
                         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                         byte[] bytes = new byte[buffer.capacity()];
                         buffer.get(bytes);
-                        save(bytes);
-                        uploader.upload(bytes, "/" + config.getSerial() + "/tmp.jpg");
+                        uploader.upload(bytes, buildFilePath());
                     }
-                    catch (FileNotFoundException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    catch (IOException e)
-                    {
-                        e.printStackTrace();
+                    catch (Throwable t) {
+                        t.printStackTrace();
                     }
                     finally {
-                        {
-                            if(image != null)
-                                image.close();
-                        }
-                    }
-                }
-                private void save(byte[] bytes) throws IOException {
-                    OutputStream outputStream = null;
-                    try{
-                        outputStream = new FileOutputStream(file);
-                        outputStream.write(bytes);
-                    }finally {
-                        if(outputStream != null)
-                            outputStream.close();
+                        if(image != null) image.close();
                     }
                 }
             };
@@ -231,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                    Toast.makeText(MainActivity.this, "Saved "+file, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
                     createCameraPreview();
                 }
             };
@@ -363,6 +342,14 @@ public class MainActivity extends AppCompatActivity {
             textureView.setSurfaceTextureListener(textureListener);
     }
 
+    private String buildFilePath() {
+        String result = config.getFormat();
+        result = result.replace("{sessionId}", sessionId);
+        result = result.replace("{serial}", config.getSerial());
+        result = result.replace("{ymdhms}", new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
+        return result;
+    }
+
     private void setSerial(String s) {
         if(!"".equals(serial))
             mqttHandler.unsubscribe(getTopicString());
@@ -370,6 +357,7 @@ public class MainActivity extends AppCompatActivity {
         mqttHandler.subscribe(getTopicString(), new IMqttMessageListener() {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
+                sessionId = message.toString();
                 takePicture();
             }
         });
