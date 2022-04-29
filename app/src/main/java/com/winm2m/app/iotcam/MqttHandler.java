@@ -14,14 +14,18 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 public class MqttHandler {
     Context context;
     String serviceUri;
+    String userName = null;
+    String password = null;
 
     MqttAndroidClient mqttAndroidClient = null;
     boolean ready = false;
     String keepAliveMessage = "";
 
-    public MqttHandler(Context context, String serviceURI) {
+    public MqttHandler(Context context, String serviceURI, String userName, String password) {
         this.context = context;
         this.serviceUri = serviceURI;
+        this.userName = userName;
+        this.password = password;
 
         mqttAndroidClient = new MqttAndroidClient(context, serviceURI, MqttClient.generateClientId());
     }
@@ -47,6 +51,8 @@ public class MqttHandler {
 
     private MqttConnectOptions getMqttConnectionOption() {
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+        if (this.userName != null && ! "null".equals(this.userName)) mqttConnectOptions.setUserName(userName);
+        if (this.password != null && ! "null".equals(this.password)) mqttConnectOptions.setPassword(password.toCharArray());
         mqttConnectOptions.setCleanSession(false);
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setWill("argos-synspae", "keep alive".getBytes(), 1, true);

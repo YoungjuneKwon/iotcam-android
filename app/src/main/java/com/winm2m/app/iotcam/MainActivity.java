@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
             mqttHandler.unsubscribe(getTopicString());
             serial = "";
         }
-        mqttHandler = new MqttHandler(this, "tcp://" + config.getMqttHost() + ":" + config.getMqttPort());
+        mqttHandler = new MqttHandler(this, "tcp://" + config.getMqttHost() + ":" + config.getMqttPort(), config.getMqttUser(), config.getMqttPass());
         tryConnecting = true;
         mqttHandler.connect(new IMqttActionListener() {
             @Override
