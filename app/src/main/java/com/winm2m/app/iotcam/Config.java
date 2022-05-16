@@ -23,6 +23,8 @@ public class Config {
     final static String DEFAULT_MQTT_HOST = "mqtt.host";
     final static String DEFAULT_MQTT_PORT = "mqtt.port";
     final static String DEFAULT_SERIAL = "dummy";
+    final static String DEFAULT_UPLOAD_URL = "http://host.addr/api/upload";
+    final static String DEFAULT_FORMAT = "{sessionId}/{serial}_{ymdhms}.jpg";
     final static String CONFIG_PATH = "/data/data/com.winm2m.app.iotcam/config";
 
 
@@ -86,8 +88,8 @@ public class Config {
         setMqttHost(DEFAULT_MQTT_HOST);
         setMqttPort(DEFAULT_MQTT_PORT);
         setSerial(DEFAULT_SERIAL);
-        setUploadUrl("http://172.20.110.18:14000/api/upload");
-        setFormat("{sessionId}-a.jpg");
+        setUploadUrl(DEFAULT_UPLOAD_URL);
+        setFormat(DEFAULT_FORMAT);
         return this;
     }
 
