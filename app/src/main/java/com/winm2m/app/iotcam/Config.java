@@ -20,9 +20,9 @@ public class Config {
     String uploadUrl;
     String format;
 
-    final static String DEFAULT_MQTT_HOST = "hub.winm2m.com";
-    final static String DEFAULT_MQTT_PORT = "46083";
-    final static String DEFAULT_SERIAL = "2ic00000";
+    final static String DEFAULT_MQTT_HOST = "mqtt.host";
+    final static String DEFAULT_MQTT_PORT = "mqtt.port";
+    final static String DEFAULT_SERIAL = "dummy";
     final static String CONFIG_PATH = "/data/data/com.winm2m.app.iotcam/config";
 
 
