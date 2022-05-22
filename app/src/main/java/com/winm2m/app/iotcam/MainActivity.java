@@ -89,6 +89,14 @@ public class MainActivity extends AppCompatActivity {
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
 
+    private Handler termReportHandler = new Handler();
+    private Runnable termReportRunnable = new Runnable() {
+        @Override
+        public void run() {
+            sendTermReport();
+        }
+    };
+
     CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
@@ -145,13 +153,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
                 tryConnecting = false;
-                mqttHandler.publish("argos-synapse", "{\"id\": \"" + config.getSerial() + "\"}");
+                termReportHandler.removeCallbacks(termReportRunnable);
+                sendTermReport();
                 setSerial(config.getSerial());
             }
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {}
         });
+    }
+
+    private void sendTermReport() {
+        if (tryConnecting || mqttHandler == null) return;
+        mqttHandler.publish("argos-synapse", "{\"id\": \"" + config.getSerial() + "\"}");
+        termReportHandler.postDelayed(termReportRunnable, 1000 * 10);
     }
 
     private void takePicture() {
@@ -188,20 +203,20 @@ public class MainActivity extends AppCompatActivity {
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader imageReader) {
-                    Image image = null;
-                    try{
-                        image = reader.acquireLatestImage();
-                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                        byte[] bytes = new byte[buffer.capacity()];
-                        buffer.get(bytes);
-                        uploader.upload(bytes, buildFilePath());
-                    }
-                    catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-                    finally {
-                        if(image != null) image.close();
-                    }
+                Image image = null;
+                try{
+                    image = reader.acquireLatestImage();
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    byte[] bytes = new byte[buffer.capacity()];
+                    buffer.get(bytes);
+                    uploader.upload(bytes, buildFilePath());
+                }
+                catch (Throwable t) {
+                    t.printStackTrace();
+                }
+                finally {
+                    if(image != null) image.close();
+                }
                 }
             };
 
@@ -209,9 +224,9 @@ public class MainActivity extends AppCompatActivity {
             final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-                    super.onCaptureCompleted(session, request, result);
-                    Toast.makeText(MainActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
-                    createCameraPreview();
+                super.onCaptureCompleted(session, request, result);
+                Toast.makeText(MainActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
+                createCameraPreview();
                 }
             };
 
@@ -222,6 +237,8 @@ public class MainActivity extends AppCompatActivity {
                         cameraCaptureSession.capture(captureBuilder.build(),captureListener,mBackgroundHandler);
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
+                    } catch (Throwable t) {
+                        t.printStackTrace();
                     }
                 }
 
@@ -272,6 +289,8 @@ public class MainActivity extends AppCompatActivity {
             cameraCaptureSessions.setRepeatingRequest(captureRequestBuilder.build(),null,mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
