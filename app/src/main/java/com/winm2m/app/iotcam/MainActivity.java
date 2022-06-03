@@ -2,6 +2,8 @@ package com.winm2m.app.iotcam;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -16,6 +18,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -96,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
             sendTermReport();
         }
     };
+    private Intent batteryStatus;
 
     CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -133,6 +137,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+
         config = Config.load();
         refreshConnections();
     }
@@ -163,9 +169,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private String getBatteryPct() {
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+        return (int)(level * 100 / (float)scale) + "%";
+    }
+
     private void sendTermReport() {
         if (tryConnecting || mqttHandler == null) return;
-        mqttHandler.publish("argos-synapse", "{\"id\": \"" + config.getSerial() + "\"}");
+        int version = BuildConfig.VERSION_CODE;
+
+
+        mqttHandler.publish("argos-synapse", "{\"app\":\"iotcam-android\", \"ver\":\""+ version + "\", \"sn\": \"" + config.getSerial() + "\", \"bat\":\"" + getBatteryPct() +"\"}");
         termReportHandler.postDelayed(termReportRunnable, 1000 * 10);
     }
 
