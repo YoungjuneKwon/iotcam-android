@@ -36,6 +36,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -140,7 +141,12 @@ public class MainActivity extends AppCompatActivity {
         batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
         config = Config.load();
+        drawVersion();
         refreshConnections();
+    }
+
+    private void drawVersion() {
+        TextView.class.cast(findViewById(R.id.version)).setText("v" + BuildConfig.VERSION_NAME);
     }
 
     private void refreshConnections() {
@@ -165,7 +171,9 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {}
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                termReportHandler.postDelayed(new Runnable() { public void run() { prepareMQTT(); } }, 1000 * 3);
+            }
         });
     }
 

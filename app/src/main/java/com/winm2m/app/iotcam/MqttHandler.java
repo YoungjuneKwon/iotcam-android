@@ -42,7 +42,7 @@ public class MqttHandler {
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-
+                    callback.onFailure(asyncActionToken, exception);
                 }
             });
         } catch(MqttException e) {

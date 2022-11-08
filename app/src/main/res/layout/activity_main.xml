@@ -201,4 +201,11 @@
 
     </RelativeLayout>
 
+    <TextView
+        android:id="@+id/version"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/buttonsArea"
+        android:layout_alignParentRight="true" />
+
 </RelativeLayout>
